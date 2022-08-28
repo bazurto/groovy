@@ -13,7 +13,7 @@ $(ASSET): $(DOWNLOADZIP)
 	cd $(EXTRACTEDDIR) && zip -r ../$(ASSET) .
 
 release: $(ASSET)
-	gh release create v$(VERSION) $(ASSET)
+	gh release create -t v$(VERSION) v$(VERSION) $(ASSET)
 
 $(DOWNLOADZIP):
 	wget -O $(DOWNLOADZIP) $(DOWNLOADURL)
