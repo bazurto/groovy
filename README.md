@@ -2,7 +2,32 @@
 
 ## Usage
 
-## Create a groovy release
+1. Create a `.bz` file in your root of your project with the following content:
+    ```hcl
+    deps = [
+        "github.com/bazurto/groovy-v4.0.4"
+    ]
+    ```
+2. Create a groovy script `myscript.groovy`:
+    ```groovy
+    println "Hello World"
+    ```
+3. Now you can execute groovy commands in your project. e.g.:
+    ```bash
+    bz groovy myscript.groovy
+    ```
+
+    or 
+
+
+    ```bash
+    bz bash
+    groovy myscript.groovy
+    ```
+
+## Contributing to this project
+
+### Create Groovy Releases
 
 ```bash
     make release VERSION=4.0.4
