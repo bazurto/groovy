@@ -1,0 +1,6 @@
+
+name = "test-project"
+
+deps = [
+    "github.com/bazurto/openjdk-v9.0.4"
+]
