@@ -1,0 +1,6 @@
+
+
+deps = [
+    "github.com/bazurto/openjdk-v17.0.4.1"
+]
+
