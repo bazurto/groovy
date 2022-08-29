@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/google/go-github/v47/github"
 	"golang.org/x/oauth2"
@@ -27,8 +28,6 @@ func resolveDependency(dep *Dep) (string, error) {
 		if err != nil {
 			return fmt.Errorf("resolveDependency error: %s", err)
 		}
-
-		extractedDir := filepath.Join(downloadToDir, getCanonicalName(dep))
 
 		if err := Uncompress(downloadedFile, extractedDir); err != nil {
 			return fmt.Errorf("resolveDependency error: error unzipping '%s' to '%s': %s", downloadedFile, extractedDir, err)
@@ -78,7 +77,8 @@ func resolveDependencyDownloadAsset(downloadToDir string, dep *Dep) (string, err
 
 	// Get the asset name that we should download in the priority order of possible asset names function
 	var asset *github.ReleaseAsset
-	for _, expected := range possibleAssetNames(dep) {
+	expectedNames := possibleAssetNames(dep)
+	for _, expected := range expectedNames {
 		for _, a := range release.Assets {
 			//fmt.Fprintf(os.Stderr, "Comparing %s == %s\n", expected.NameWithExt(), a.GetName())
 			if expected.NameWithExt() == a.GetName() {
@@ -89,7 +89,11 @@ func resolveDependencyDownloadAsset(downloadToDir string, dep *Dep) (string, err
 	}
 
 	if asset == nil {
-		return "", fmt.Errorf("Could not find asset")
+		return "", fmt.Errorf(
+			"Could not find asset %s in depedency %s",
+			strings.Join(BzAssetArrHelper(expectedNames).CollectNames(), ","),
+			dep.String(),
+		)
 	}
 
 	fmt.Printf("Found asset %s\n", asset.GetName())
@@ -140,6 +144,16 @@ func (a *BzAsset) NameWithExt() string {
 	return fmt.Sprintf("%s.%s", a.Canonical, a.Ext)
 }
 
+type BzAssetArrHelper []BzAsset
+
+func (o BzAssetArrHelper) CollectNames() []string {
+	var names []string
+	for _, i := range o {
+		names = append(names, i.NameWithExt())
+	}
+	return names
+}
+
 func possibleAssetNames(dep *Dep) []BzAsset {
 	osArch := fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)
 
@@ -157,8 +171,11 @@ func possibleAssetNames(dep *Dep) []BzAsset {
 }
 
 func resolveExtractedDir(baseDir string, dep *Dep) string {
-	name := getCanonicalName(dep)
-	return filepath.Join(baseDir, name)
+	//name := fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)
+	//dir := filepath.Join(baseDir, dep.String)
+	//log.Printf("Resolved extrated dir to: %s", dir)
+	dir := filepath.Join(baseDir, "extracted")
+	return dir
 }
 
 func getCanonicalName(dep *Dep) string {

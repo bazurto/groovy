@@ -251,6 +251,10 @@ func Untgz(fileName, dir string) error {
 
 	tarReader := tar.NewReader(uncompressedStream)
 
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
 	for true {
 		header, err := tarReader.Next()
 
@@ -264,11 +268,21 @@ func Untgz(fileName, dir string) error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.Mkdir(header.Name, 0755); err != nil {
+			realName, err := uncompressActualPath(dir, header.Name)
+			if err != nil {
+				return fmt.Errorf("untgz: filepath.abs() failed: %w", err)
+			}
+
+			if err := os.Mkdir(realName, 0755); err != nil {
 				return fmt.Errorf("Untgz: Mkdir() failed: %w", err)
 			}
 		case tar.TypeReg:
-			outFile, err := os.Create(header.Name)
+			realName, err := uncompressActualPath(dir, header.Name)
+			if err != nil {
+				return fmt.Errorf("untgz: filepath.abs() failed: %w", err)
+			}
+
+			outFile, err := os.OpenFile(realName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(header.Mode))
 			if err != nil {
 				return fmt.Errorf("Untgz: Create() failed: %w", err)
 			}
@@ -278,9 +292,21 @@ func Untgz(fileName, dir string) error {
 			outFile.Close()
 
 		default:
-			return fmt.Errorf("Untgz: unknown type: %s in %s ", header.Typeflag, header.Name)
+			return fmt.Errorf("Untgz: unknown type: %b in %s ", header.Typeflag, header.Name)
 		}
 
 	}
 	return nil
+}
+
+func uncompressActualPath(dir, path string) (string, error) {
+	var err error
+	realName := filepath.Clean(filepath.Join(dir, filepath.FromSlash(path)))
+	if err != nil {
+		return "", fmt.Errorf("Uncompress: filepath.Abs() failed: %w", err)
+	}
+	if !strings.HasPrefix(realName, dir) {
+		return "", fmt.Errorf("Uncompress: path(%s) not contained within path(%s)", realName, dir)
+	}
+	return realName, nil
 }

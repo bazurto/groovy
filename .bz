@@ -1,6 +1,10 @@
 
-name = "test-project"
-
 deps = [
     "github.com/bazurto/openjdk-v9.0.4"
 ]
+
+
+task pack {
+    extends = "pack@github.com/bazurto/tasks"
+}
+

@@ -20,14 +20,33 @@ type BzUserConfigServerBlock struct {
 	Token string `hcl:"token"`
 }
 
+/*
+	export {
+	    JAVA_HOME = "${DIR}'''+macDir+'''"
+	}
+
+	desc {
+	    binDir = "${JAVA_HOME}/bin"
+	}
+*/
 type Config struct {
-	Name  string   `hcl:"name"`
-	Deps  []string `hcl:"deps"`
-	Tasks []Task   `hcl:"task,block"`
+	//Name  string   `hcl:"name"`
+	Deps   []string `hcl:"deps"`
+	Tasks  []Task   `hcl:"task,block"`
+	Export *Export  `hcl:"export,block"`
+	Desc   *Desc    `hcl:"desc,block"`
+}
+
+type Export struct {
+	ExportBody hcl.Body `hcl:",remain"`
+}
+type Desc struct {
+	BinDir *string `hcl:"binDir"`
 }
 
 type Task struct {
-	Name string `hcl:"name,label"`
+	Name    string  `hcl:"name,label"`
+	Extends *string `hcl:"extends"`
 }
 
 func (c *Config) GetDeps() []*Dep {
