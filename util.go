@@ -251,8 +251,10 @@ func Untgz(fileName, dir string) error {
 
 	tarReader := tar.NewReader(uncompressedStream)
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
+	if !fileExists(dir) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
 	}
 
 	for true {
@@ -268,15 +270,18 @@ func Untgz(fileName, dir string) error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
+			//fmt.Printf("%d %s\n", header.Mode, header.Name)
 			realName, err := uncompressActualPath(dir, header.Name)
 			if err != nil {
 				return fmt.Errorf("untgz: filepath.abs() failed: %w", err)
 			}
 
-			if err := os.Mkdir(realName, 0755); err != nil {
-				return fmt.Errorf("Untgz: Mkdir() failed: %w", err)
+			//os.MkdirAll(path, zipFile.Mode())
+			if err := os.MkdirAll(realName, os.FileMode(header.Mode)); err != nil {
+				return fmt.Errorf("Untgz: Mkdir(%s) failed: %w", realName, err)
 			}
 		case tar.TypeReg:
+			//fmt.Printf("%d %s\n", header.Mode, header.Name)
 			realName, err := uncompressActualPath(dir, header.Name)
 			if err != nil {
 				return fmt.Errorf("untgz: filepath.abs() failed: %w", err)
@@ -290,8 +295,41 @@ func Untgz(fileName, dir string) error {
 				return fmt.Errorf("Untgz: Copy() failed: %w", err)
 			}
 			outFile.Close()
+		case tar.TypeSymlink:
+			realName, err := uncompressActualPath(dir, header.Name)
+			if err != nil {
+				return fmt.Errorf("untgz: filepath.abs() failed: %w", err)
+			}
+
+			outFile, err := os.OpenFile(realName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(header.Mode))
+			if err != nil {
+				return fmt.Errorf("Untgz: Create() failed: %w", err)
+			}
+
+			if _, err := io.Copy(outFile, strings.NewReader(header.Linkname)); err != nil {
+				return fmt.Errorf("Untgz: Copy() failed: %w", err)
+			}
+			outFile.Close()
 
 		default:
+			/*
+				fmt.Fprintf(os.Stderr, "tar.TypeReg #%b#\n", tar.TypeReg)
+				fmt.Fprintf(os.Stderr, "tar.TypeRegA #%b#\n", tar.TypeRegA)
+				fmt.Fprintf(os.Stderr, "tar.TypeLink #%b#\n", tar.TypeLink)
+				fmt.Fprintf(os.Stderr, "tar.TypeSymlink #%b#\n", tar.TypeSymlink)
+				fmt.Fprintf(os.Stderr, "tar.TypeChar #%b#\n", tar.TypeChar)
+				fmt.Fprintf(os.Stderr, "tar.TypeBlock #%b#\n", tar.TypeBlock)
+				fmt.Fprintf(os.Stderr, "tar.TypeDir #%b#\n", tar.TypeDir)
+				fmt.Fprintf(os.Stderr, "tar.TypeFifo #%b#\n", tar.TypeFifo)
+				fmt.Fprintf(os.Stderr, "tar.TypeCont #%b#\n", tar.TypeCont)
+				fmt.Fprintf(os.Stderr, "tar.TypeXHeader #%b#\n", tar.TypeXHeader)
+				fmt.Fprintf(os.Stderr, "tar.TypeXGlobalHeader #%b#\n", tar.TypeXGlobalHeader)
+				fmt.Fprintf(os.Stderr, "tar.TypeGNUSparse #%b#\n", tar.TypeGNUSparse)
+				fmt.Fprintf(os.Stderr, "tar.TypeGNULongName #%b#\n", tar.TypeGNULongName)
+				fmt.Fprintf(os.Stderr, "tar.TypeGNULongLink #%b#\n", tar.TypeGNULongLink)
+			*/
+
+			fmt.Fprintf(os.Stderr, "#%b#\n", tar.TypeDir)
 			return fmt.Errorf("Untgz: unknown type: %b in %s ", header.Typeflag, header.Name)
 		}
 

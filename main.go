@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"mvdan.cc/sh/shell"
 )
 
 const (
@@ -46,8 +48,31 @@ func main() {
 	// get all extracted directories from dependencies
 	eaList := resolveFromBzFilePath(".bz")
 	var newPath []string
+
+	// env vars
+	env := make(map[string]string)
 	for _, ea := range eaList {
-		newPath = append(newPath, ea.BinDir)
+		env["DIR"] = ea.Dir // DIR
+
+		//
+		for k, v := range ea.Exports {
+			env[k] = parseShellTpl(v, env)
+		}
+
+		delete(env, "DIR")
+	}
+
+	//BinDir
+	for _, ea := range eaList {
+		env["DIR"] = ea.Dir // DIR
+		fmt.Println(ea.BinDir)
+		newPath = append(newPath, parseShellTpl(ea.BinDir, env))
+		delete(env, "DIR")
+	}
+
+	// SetEnv
+	for k, v := range env {
+		os.Setenv(k, v)
 	}
 
 	//
@@ -130,8 +155,9 @@ func resolveFromBzFilePathStack(bzFilePath string, stack []string) []ExtractedDe
 
 		// bin dir
 		var binDir string
-		if bzFile.Desc != nil && bzFile.Desc.BinDir != nil {
-			binDir = *bzFile.Desc.BinDir
+		fmt.Println("##", bzFilePath, bzFile.BinDir, "@@@@")
+		if bzFile.BinDir != "" {
+			binDir = bzFile.BinDir
 		} else {
 			binDir = filepath.Join(extractedDependencyDir, "bin")
 		}
@@ -144,4 +170,21 @@ func resolveFromBzFilePathStack(bzFilePath string, stack []string) []ExtractedDe
 		edList = append(edList, ed)
 	}
 	return edList
+}
+
+func parseShellTpl(tpl string, env map[string]string) string {
+	//
+	f := func(tplVar string) string {
+		if v, ok := env[tplVar]; ok {
+			return v
+		}
+		return tplVar
+	}
+
+	//
+	parsedStr, err := shell.Expand(tpl, f)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: %s\n", err)
+	}
+	return parsedStr
 }

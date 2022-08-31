@@ -6,47 +6,29 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/amzn/ion-go/ion"
 )
 
-type BzUserConfig struct {
-	Server []BzUserConfigServerBlock `hcl:"server,block"`
-}
-
-type BzUserConfigServerBlock struct {
-	Name  string `hcl:"name,label"`
-	Token string `hcl:"token"`
-}
-
 /*
-	export {
-	    JAVA_HOME = "${DIR}'''+macDir+'''"
-	}
-
-	desc {
-	    binDir = "${JAVA_HOME}/bin"
+	{
+		server: {
+			"github.com": {
+				token: "..."
+			}
+		}
 	}
 */
+type BzUserConfig struct {
+	Server map[string]BzUserConfigServerAttrs `ion:"server"`
+}
+type BzUserConfigServerAttrs struct {
+	Token string `ion:"token"`
+}
+
 type Config struct {
-	//Name  string   `hcl:"name"`
-	Deps   []string `hcl:"deps"`
-	Tasks  []Task   `hcl:"task,block"`
-	Export *Export  `hcl:"export,block"`
-	Desc   *Desc    `hcl:"desc,block"`
-}
-
-type Export struct {
-	ExportBody hcl.Body `hcl:",remain"`
-}
-type Desc struct {
-	BinDir *string `hcl:"binDir"`
-}
-
-type Task struct {
-	Name    string  `hcl:"name,label"`
-	Extends *string `hcl:"extends"`
+	BinDir string            `ion:"binDir"`
+	Deps   []string          `ion:"deps"`
+	Export map[string]string `ion:"env"`
 }
 
 func (c *Config) GetDeps() []*Dep {
@@ -116,29 +98,32 @@ func hclLoadConfig(f string, cfg any) error {
 	if err != nil {
 		return fmt.Errorf("Error reading file %s: %s\n", f, err)
 	}
-	var ctx *hcl.EvalContext //nil
+	return ion.Unmarshal(b, cfg)
 
-	var file *hcl.File
-	var diags hcl.Diagnostics
+	/*
+		var ctx *hcl.EvalContext //nil
 
-	file, diags = hclsyntax.ParseConfig(b, f, hcl.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
-		return diags
-	}
+		var file *hcl.File
+		var diags hcl.Diagnostics
 
-	diags = gohcl.DecodeBody(file.Body, ctx, cfg)
-	if diags.HasErrors() {
-		return diags
-	}
+		file, diags = hclsyntax.ParseConfig(b, f, hcl.Pos{Line: 1, Column: 1})
+		if diags.HasErrors() {
+			return diags
+		}
 
-	return nil
+		diags = gohcl.DecodeBody(file.Body, ctx, cfg)
+		if diags.HasErrors() {
+			return diags
+		}
+
+	*/
 }
 
 func (o *BzUserConfig) GetServerToken(serverName string) string {
 	var token string
-	for _, s := range o.Server {
-		if strings.ToLower(s.Name) == strings.ToLower(serverName) {
-			token = s.Token
+	for serverName, attr := range o.Server {
+		if strings.ToLower(serverName) == strings.ToLower(serverName) {
+			token = attr.Token
 		}
 	}
 	return token
