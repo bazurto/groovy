@@ -40,5 +40,5 @@
 or
 
 ```bash
-    for i in `cat versions`; do make release VERSION=$i; make clean $i; done
+    for i in `cat versions`; do make clean VERSION=$i; make release VERSION=$i; make clean VERSION=$i; done
 ```

@@ -1,0 +1,10 @@
+{
+  "deps": [
+    {
+      "server": "github.com",
+      "owner": "bazurto",
+      "repo": "openjdk",
+      "version": "17.0.4.1"
+    }
+  ]
+}
