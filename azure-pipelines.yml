@@ -19,7 +19,26 @@ steps:
   displayName: 'Run a multi-line script'
 
 - task: CmdLine@2
+  displayName: Install Java Groovy
   inputs:
     script: |
-      echo Write your commands here
-      echo Hello world
+      javaurl='https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.4.1_1.tar.gz'
+      groovyurl='https://groovy.jfrog.io/ui/api/v1/download?repoKey=dist-release-local&path=groovy-zips%252Fapache-groovy-binary-4.0.5.zip&isNativeBrowsing=true'
+      if [ ! -d "/home/agent/other/openjdk-17" ]; then
+        mkdir -p /home/agent/other
+        if [ ! -f "/home/agent/other/OpenJDK17U-jdk_x64_linux_hotspot_17.0.4.1_1.tar.gz" ]; then
+            wget $javaurl -O /home/agent/other/OpenJDK17U-jdk_x64_linux_hotspot_17.0.4.1_1.tar.gz
+        fi
+        cd /home/agent/other
+        tar xvfz OpenJDK17U-jdk_x64_linux_hotspot_17.0.4.1_1.tar.gz
+        mv jdk-17.0.4.1+1 openjdk-17
+      fi
+      if [ ! -d "/home/agent/other/groovy-4.0.5" ]; then
+        sudo apt install -y unzip
+        mkdir -p /home/agent/other
+        if [ ! -f "/home/agent/other/apache-groovy-binary-4.0.5.zip" ]; then
+          wget $groovyurl -O /home/agent/other/apache-groovy-binary-4.0.5.zip
+        fi
+        cd /home/agent/other
+        unzip apache-groovy-binary-4.0.5.zip
+      fi
