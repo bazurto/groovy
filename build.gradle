@@ -1,0 +1,115 @@
+
+plugins {
+    id "de.undercouch.download" version "5.4.0"
+}
+
+ext {
+    groovyVeersions = [
+        "3.0.9": [ major: "8", build: "8.362.09" ],
+        "3.0.17": [ major: "8", build: "8.362.09" ],
+        "4.0.4":  [ major: "17", build: "17.0.6.10" ],
+        "4.0.11": [ major: "17", build: "17.0.6.10" ],
+    ]
+
+    latestRelease = "4.0.11"
+}
+
+
+task release(dependsOn:"tgz") {
+    doLast {
+        groovyVeersions.each { VERSION, dep ->
+            def ASSET = file("$buildDir/groovy-v${VERSION}.tgz")
+            shell(cmd:"gh release delete -y v$VERSION", dir: buildDir, throw:false)
+            shell(cmd:"gh release create --generate-notes -t v$VERSION v$VERSION $ASSET", dir: buildDir)
+        }
+
+        shell(cmd: "gh release edit v$latestRelease --latest")
+    }
+}
+
+task tgz(dependsOn:"enhance") {
+    doLast {
+        groovyVeersions.each { VERSION, dep ->
+            def src = file("$buildDir/groovy-${VERSION}")
+            def dst = file("$buildDir/groovy-v${VERSION}.tgz")
+            def tmp = file("${dst}.tmp")
+            if (!dst.exists()) {
+                ant {
+                    tar(destFile: tmp, compression: 'gzip', longfile: 'posix') {
+                        fileset(dir: src)
+                    }
+                }
+                file(tmp).renameTo(dst)
+            }
+        }
+    }
+}
+
+task enhance(dependsOn:"unzip") {
+    doLast {
+        groovyVeersions.each { VERSION, dep ->
+            file("$buildDir/groovy-${VERSION}/.bz.hcl").text = """deps = ["github.com/bazurto/openjdk@$dep.major"]\n"""
+            file("$buildDir/groovy-${VERSION}/.bz.lock").text = """{ "deps":[{"server": "github.com", "owner": "bazurto", "repo": "openjdk", "version": "v$dep.build"}]}\n"""
+        }
+    }
+}
+
+task unzip(dependsOn:"fetch") {
+    doLast {
+        groovyVeersions.each { VERSION, dep ->
+            def dst = file("$buildDir/groovy-${VERSION}")
+            def src = file("$buildDir/apache-groovy-sdk-${VERSION}.zip")
+            def tmp = file("$buildDir/tmp_${VERSION}")
+            if (!dst.exists()) {
+                mkdir tmp 
+                ant {
+                    unzip(src: src, dest: tmp)
+                }
+                file("$tmp/groovy-${VERSION}").renameTo(dst)
+            }
+        }
+    }
+}
+
+task fetch() {
+    doLast {
+        groovyVeersions.each { VERSION, dep ->
+            def outFile = file("$buildDir/apache-groovy-sdk-${VERSION}.zip")
+            if (!outFile.exists()) {
+                download.run {
+                    src "https://groovy.jfrog.io/ui/api/v1/download?repoKey=dist-release-local&path=groovy-zips%252Fapache-groovy-sdk-${VERSION}.zip&isNativeBrowsing=true"
+                    dest file("$buildDir/apache-groovy-sdk-${VERSION}.zip")
+                    overwrite false
+                    tempAndMove true
+                }
+            }
+        }
+    }
+}
+
+task clean() {
+    doLast {
+        delete buildDir
+    }
+}
+
+def shell(opts = [:]) {
+    if (!opts.dir) { opts.dir = project.projectDir }
+    if (!opts.env) { opts.env = System.env.entrySet().stream().map { "$it.key=$it.value"  }.collect().asList() }
+    if (!opts.containsKey("throw")) { opts.throw = true }
+    opts.dir = file(opts.dir)
+
+    println opts.cmd
+    def proc = opts.cmd.execute(opts.env, opts.dir)
+    proc.consumeProcessOutput(System.out, System.err)
+    if (proc.waitFor() != 0) {
+        if (opts.throw) {
+            throw new RuntimeException("command `$opts.cmd` returned error")
+        }
+    }
+}
+
+def _(name) {
+    return name.replace('-', '_')
+    .replace('.', '_').toLowerCase();
+}

@@ -1,5 +1,0 @@
-{
-    deps: [
-        "github.com/bazurto/openjdk@17.0.4.1",
-    ]
-}
