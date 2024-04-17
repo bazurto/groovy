@@ -3,8 +3,8 @@
     {
       "server": "github.com",
       "owner": "bazurto",
-      "repo": "openjdk",
-      "version": "17.0.6.10"
+      "repo": "gradle",
+      "version": "7.6.2"
     }
   ]
 }

@@ -5,13 +5,14 @@ plugins {
 
 ext {
     groovyVeersions = [
-        "3.0.9": [ major: "8", build: "8.362.09" ],
-        "3.0.17": [ major: "8", build: "8.362.09" ],
-        "4.0.4":  [ major: "17", build: "17.0.6.10" ],
-        "4.0.11": [ major: "17", build: "17.0.6.10" ],
+        //"3.0.9": [ major: "8", build: "8.362.09" ],
+        //"3.0.17": [ major: "8", build: "8.362.09" ],
+        //"4.0.4":  [ major: "17", build: "17.0.6.10" ],
+        //"4.0.11": [ major: "17", build: "17.0.6.10" ],
+        "4.0.21": [ major: "21", build: "21.0.2.13" ],
     ]
 
-    latestRelease = "4.0.11"
+    latestRelease = "4.0.21"
 }
 
 
