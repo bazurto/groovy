@@ -11,6 +11,7 @@ $(ASSET): $(DOWNLOADZIP)
 	rm -fr $(EXTRACTEDDIR)
 	unzip $(DOWNLOADZIP)
 	cp .bz $(EXTRACTEDDIR)
+	cp .bz.lock $(EXTRACTEDDIR)
 	cd $(EXTRACTEDDIR) && zip -r ../$(ASSET) .
 
 release: $(ASSET)
