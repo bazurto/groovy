@@ -15,7 +15,7 @@ $(ASSET): $(DOWNLOADZIP)
 	cd $(EXTRACTEDDIR) && zip -r ../$(ASSET) .
 
 release: $(ASSET)
-	gh release delete -y v$(VERSION)
+	gh release delete --cleanup-tag -y v$(VERSION) || true
 	gh release create --generate-notes -t v$(VERSION) v$(VERSION) $(ASSET)
 
 $(DOWNLOADZIP):

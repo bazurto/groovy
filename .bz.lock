@@ -4,7 +4,7 @@
       "server": "github.com",
       "owner": "bazurto",
       "repo": "openjdk",
-      "version": "17.0.4.1"
+      "version": "17.0.6.10"
     }
   ]
 }
