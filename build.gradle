@@ -20,7 +20,7 @@ task release(dependsOn:"tgz") {
     doLast {
         groovyVeersions.each { VERSION, dep ->
             def ASSET = file("$buildDir/groovy-v${VERSION}.tgz")
-            shell(cmd:"gh release delete -y v$VERSION", dir: buildDir, throw:false)
+            shell(cmd:"gh release delete -y --cleanup-tag v$VERSION", dir: buildDir, throw:false)
             shell(cmd:"gh release create --generate-notes -t v$VERSION v$VERSION $ASSET", dir: buildDir)
         }
 
@@ -35,11 +35,13 @@ task tgz(dependsOn:"enhance") {
             def dst = file("$buildDir/groovy-v${VERSION}.tgz")
             def tmp = file("${dst}.tmp")
             if (!dst.exists()) {
-                ant {
-                    tar(destFile: tmp, compression: 'gzip', longfile: 'posix') {
-                        fileset(dir: src)
-                    }
-                }
+                delete tmp
+                shell(cmd: ["tar", "cvfz", tmp, "."], dir: src)
+                //ant {
+                //    tar(destFile: tmp, compression: 'gzip', longfile: 'posix') {
+                //        fileset(dir: src)
+                //    }
+                //}
                 file(tmp).renameTo(dst)
             }
         }
@@ -62,10 +64,12 @@ task unzip(dependsOn:"fetch") {
             def src = file("$buildDir/apache-groovy-sdk-${VERSION}.zip")
             def tmp = file("$buildDir/tmp_${VERSION}")
             if (!dst.exists()) {
-                mkdir tmp 
-                ant {
-                    unzip(src: src, dest: tmp)
-                }
+                delete tmp
+                mkdir tmp
+                shell(cmd:["unzip", src], dir: tmp)
+                //ant {
+                //    unzip(src: src, dest: tmp)
+                //}
                 file("$tmp/groovy-${VERSION}").renameTo(dst)
             }
         }
